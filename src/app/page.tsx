@@ -1,101 +1,154 @@
+"use client";
 import Image from "next/image";
+import Header from "../app/components/header";
+import { Icon } from "./components/Icons";
+import { useState, useEffect } from "react";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const moedas = ["USD", "EUR", "JPY", "BRL", "AUD"];
+  
+  const [inputValue, setInputValue] = useState("0"); 
+  const [exchangeRate, setExchangeRate] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [debouncedInputValue, setDebouncedInputValue] = useState(inputValue);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const [DropdownEsquerdoEstaAberto, setDropdownEsquerdo] = useState(false);
+  const [MoedaSelecionadaEsquerda, setMoedaEsquerda] = useState("USD");
+
+  const [DropdownDireitoEstaAberto, setDropdownDireito] = useState(false);
+  const [MoedaSelecionadaDireita, setMoedaDireita] = useState("BRL");
+
+  useEffect(() => {
+    const fetchExchangeRate = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/exchangerate?baseCurrency=${MoedaSelecionadaEsquerda}&targetCurrency=${MoedaSelecionadaDireita}&amount=${debouncedInputValue}`);
+        const data = await res.json();
+        setExchangeRate(data.conversion_result);
+      } catch (error) {
+        console.error("Erro ao carregar a taxa de câmbio:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchExchangeRate();
+  }, [debouncedInputValue, MoedaSelecionadaEsquerda, MoedaSelecionadaDireita]);
+  
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedInputValue(inputValue);
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [inputValue]);
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setInputValue(event.target.value); 
+  };
+
+  const mudarDropdownEsquerdo = () => {
+    setDropdownEsquerdo(!DropdownEsquerdoEstaAberto);
+    setDropdownDireito(false);
+  };
+
+  const mudarDropdownDireito = () => {
+    setDropdownDireito(!DropdownDireitoEstaAberto);
+    setDropdownEsquerdo(false);
+  };
+
+  const handleMoedaSelecionadaEsquerda = (moeda: string) => {
+    setMoedaEsquerda(moeda);
+    setDropdownEsquerdo(false);
+  };
+
+  const handleMoedaSelecionadaDireita = (moeda: string) => {
+    setMoedaDireita(moeda);
+    setDropdownDireito(false);
+  };
+
+  const trocarMoedas = () => {
+    setMoedaEsquerda(MoedaSelecionadaDireita)
+    setMoedaDireita(MoedaSelecionadaEsquerda)
+  }
+
+  return (
+    <div className="flex flex-col h-screen">
+      <Header />
+      <main className="w-full h-full flex flex-col p-4 overflow-y-auto">
+        <div className="flex self-start gap-4 justify-between ml-auto mr-auto">
+          <Icon name="exchange" className="object-contain"></Icon>
+          <h1 className="text-xl">Conversor de moedas</h1>
         </div>
+        <section className="p-8 flex flex-col items-center justify-center border-2 border-black rounded-[50px] shadow-xl ml-auto mr-auto gap-4">
+          <div className="flex justify-between items-center w-[400px]">
+            <div className="flex flex-col relative">
+              <span>De:</span>
+              <button
+                onClick={mudarDropdownEsquerdo}
+                className="border border-black p-1 rounded flex gap-2"
+              >
+                <Icon name={MoedaSelecionadaEsquerda}></Icon>
+                {MoedaSelecionadaEsquerda}
+                <Icon name="chevron" size={15} className="object-contain "></Icon>
+              </button>
+              {DropdownEsquerdoEstaAberto && (
+                <div className="absolute top-full mt-1 w-full border border-gray-200 rounded shadow-lg bg-white z-10">
+                  {moedas.map((moeda) => (
+                    <button
+                      key={moeda}
+                      onClick={() => handleMoedaSelecionadaEsquerda(moeda)}
+                      className="flex block w-full p-1 text-left hover:bg-gray-100 gap-1"
+                    >
+                      <Icon name={moeda}></Icon>
+                      {moeda}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button className="self-end">
+              <Icon name="alter" onClick={trocarMoedas} />
+            </button>
+            <div className="flex flex-col relative">
+              <span>Para:</span>
+              <button
+                onClick={mudarDropdownDireito}
+                className="border border-black p-1 rounded flex gap-2"
+              >
+                <Icon name={MoedaSelecionadaDireita}></Icon>
+                {MoedaSelecionadaDireita}
+                <Icon name="chevron" size={15} className="object-contain "></Icon>
+              </button>
+              {DropdownDireitoEstaAberto && (
+                <div className="absolute top-full mt-1 w-full border border-gray-200 rounded shadow-lg bg-white z-10">
+                  {moedas.map((moeda) => (
+                    <button
+                      key={moeda}
+                      onClick={() => handleMoedaSelecionadaDireita(moeda)}
+                      className="flex block w-full p-1 text-left hover:bg-gray-100 gap-1"
+                    >
+                      <Icon name={moeda}></Icon>
+                      {moeda}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="flex justify-between items-center w-[400px]">
+            <input
+              type="number"
+              value={inputValue}
+              onChange={handleInputChange} 
+              id="amountInput"
+              className="border border-black shadow-lg rounded p-1 min-w-[100px] w-auto"
+            />
+            <Icon name="rightArrow" />
+            {loading ? <span>Carregando...</span> : <span className="border border-black rounded shadow-lg p-1 w-full min-w-[100px] w-auto h-full">{exchangeRate}</span>}
+          </div>
+        </section>
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
   );
 }

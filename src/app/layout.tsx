@@ -1,3 +1,4 @@
+/** layout é o primeiro arquivo chamado quando a aplicação é iniciada */
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
